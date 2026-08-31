@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "ES2015",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "types": [],
+    "lib": ["ES2017", "DOM"]
+  },
+  "include": [
+    "cc.d.ts",
+    "../../assets/scripts/**/*.ts"
+  ]
+}

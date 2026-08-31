@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "out",
+    "strict": false,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "types": [],
+    "lib": ["ES2017"]
+  },
+  "include": [
+    "../../assets/scripts/data/ChapterText.ts",
+    "../../assets/scripts/data/MapGrids.ts",
+    "../../assets/scripts/data/WorldData.ts"
+  ]
+}
