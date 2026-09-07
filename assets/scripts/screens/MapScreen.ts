@@ -427,52 +427,72 @@ export class MapScreen extends ScreenBase {
     private openMenu(): void {
         this.menuOpen = true;
         const h = Game.save.hero;
-        const panel = makePanel('menu', 208, 196, 0, 0, this.node, true);
-        this.menuPanel = panel;
-        makeLabel(h.name, 14, FC.YELLOW, panel, -90, 86, 180);
-        makeLabel(
-            `Lv${h.lv}  EXP ${h.exp}/${h.lv >= 8 ? '--' : String(10 * h.lv * h.lv)}  G ${h.gold}`,
-            11, FC.WHITE, panel, -90, 68, 180,
-        );
-        makeLabel(`体力 ${Game.battleHp}/${h.maxHp}  灵力 ${Game.battleMp}/${h.maxMp}`, 11, FC.WHITE, panel, -90, 52, 180);
-        // 道术
-        let y = 34;
-        makeLabel('──道术──', 11, FC.GRAY, panel, -90, y, 180);
-        y -= 16;
+        // —— 布局常量：统一左对齐、固定行距、组间隔 ——
+        const ROW = 14;   // 条目行距
+        const GAP = 16;   // 组之间间隔（20 会超出 224 设计分辨率，16 为安全上限）
+        const TX = -82;   // 正文统一左对齐 x（面板左侧留边）
+        const CX = -90;   // 光标 x（对齐线左侧 8px）
+        // 先算好所有文本行坐标，再按内容决定面板尺寸，保证上下留白均衡
+        const rows: { text: string; size: number; color: number[]; x: number; w: number; y: number }[] = [];
+        let y = 90;
+        const nameY = y;
+        rows.push({ text: h.name, size: 14, color: FC.YELLOW, x: TX, w: 180, y });
+        y -= ROW;
+        rows.push({
+            text: `Lv${h.lv}  EXP ${h.exp}/${h.lv >= 8 ? '--' : String(10 * h.lv * h.lv)}  G ${h.gold}`,
+            size: 11, color: FC.WHITE, x: TX, w: 180, y,
+        });
+        y -= ROW;
+        rows.push({ text: `体力 ${Game.battleHp}/${h.maxHp}  灵力 ${Game.battleMp}/${h.maxMp}`, size: 11, color: FC.WHITE, x: TX, w: 180, y });
+        // 道术组
+        y -= GAP;
+        rows.push({ text: '──道术──', size: 11, color: FC.GRAY, x: TX, w: 180, y });
+        y -= ROW;
         const skills = [['火诀', true], ['清心诀', (h.items['清心诀'] || 0) > 0]] as [string, boolean][];
         for (const [name, learned] of skills) {
-            makeLabel(learned ? name : '？', 11, learned ? FC.WHITE : FC.GRAY, panel, -70, y, 170);
-            y -= 14;
+            rows.push({ text: learned ? name : '？', size: 11, color: learned ? FC.WHITE : FC.GRAY, x: TX, w: 170, y });
+            y -= ROW;
         }
-        // 道具菜单项
-        y -= 4;
-        makeLabel('──道具──', 11, FC.GRAY, panel, -90, y, 180);
-        y -= 14;
+        // 道具组（含保存/关闭操作项）
+        y -= GAP;
+        rows.push({ text: '──道具──', size: 11, color: FC.GRAY, x: TX, w: 180, y });
+        y -= ROW;
         this.menuItems = [];
         const pushItem = (name: string, kind: MenuItem['kind'], id: string | undefined, yPos: number) => {
             this.menuItems.push({ text: name, kind, id, y: yPos });
-            makeLabel(name, 11, FC.WHITE, panel, -58, yPos, 150);
+            rows.push({ text: name, size: 11, color: FC.WHITE, x: TX, w: 150, y: yPos });
         };
         const order = [['bun', '馒头'], ['talisman', '纸符'], ['soup', '药汤']] as [string, string][];
         for (const [id, name] of order) {
             const cnt = h.items[name] || 0;
             if (cnt > 0) {
                 pushItem(`${name} ×${cnt}`, 'item', id, y);
-                y -= 14;
+                y -= ROW;
             }
         }
         pushItem('保存进度', 'save', undefined, y);
-        y -= 14;
+        y -= ROW;
         pushItem('关闭', 'close', undefined, y);
+        // 底部提示行（居中显示）
+        const tipY = y - GAP;
+        rows.push({ text: 'J确认 K取消 方向键移动', size: 10, color: FC.GRAY, x: 0, w: 0, y: tipY });
+        // 面板高度按内容重算，内容在面板内上下留白均衡（整体仍居中于 (0,0) 附近）
+        const PAD = 12;
+        const contentTop = nameY + Math.round((14 * 1.25) / 2);    // 名字行上沿
+        const contentBottom = tipY - Math.round((10 * 1.25) / 2);  // 提示行下沿
+        const panelH = Math.max(140, Math.round(contentTop - contentBottom + PAD * 2));
+        const panelY = Math.round((nameY + tipY) / 2);
+        const panel = makePanel('menu', 208, panelH, 0, panelY, this.node, true);
+        this.menuPanel = panel;
+        for (const r of rows) makeLabel(r.text, r.size, r.color, panel, r.x, r.y, r.w);
         this.menuIdx = 0;
-        this.menuCursor = makeCursor(panel, -68, this.menuItems[0].y);
-        makeLabel('B:退出菜单  A:确认', 10, FC.GRAY, panel, 0, -84, 190);
+        this.menuCursor = makeCursor(panel, CX, this.menuItems[0].y);
     }
 
     private menuMove(delta: number): void {
         if (!this.menuItems.length || !this.menuCursor) return;
         this.menuIdx = Math.max(0, Math.min(this.menuItems.length - 1, this.menuIdx + delta));
-        this.menuCursor.setPosition(new Vec3(-68, this.menuItems[this.menuIdx].y, 0));
+        this.menuCursor.setPosition(new Vec3(-90, this.menuItems[this.menuIdx].y, 0)); // 光标 x 与 openMenu 的 CX=-90 一致
         Sound.play('cursor');
     }
 
