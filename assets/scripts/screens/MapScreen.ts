@@ -61,6 +61,9 @@ export class MapScreen extends ScreenBase {
     private menuIdx = 0;
     private stepClock = 0;
     private encounterSteps = CFG.ENCOUNTER_STEPS;
+    /** 触屏按键节点（方向键/A/B 及各自底框），对话进行时隐藏 */
+    private touchKeys: Node[] = [];
+    private touchVisible = true;
 
     protected onLoad(): void {
         this.loadMap();
@@ -210,7 +213,8 @@ export class MapScreen extends ScreenBase {
             btn.layer = this.node.layer;
             this.node.addChild(btn);
             btn.addComponent(UITransform).setContentSize(14, 14);
-            makePanel('kp', 14, 14, x, y, this.node, false);
+            const panel = makePanel('kp', 14, 14, x, y, this.node, false);
+            this.touchKeys.push(btn, panel);
             btn.setPosition(new Vec3(x, y, 0));
             btn.on(Node.EventType.TOUCH_START, () => this.held.add(key));
             btn.on(Node.EventType.TOUCH_END, () => this.held.delete(key));
@@ -225,7 +229,8 @@ export class MapScreen extends ScreenBase {
             btn.layer = this.node.layer;
             this.node.addChild(btn);
             btn.addComponent(UITransform).setContentSize(14, 14);
-            makePanel('kb', 14, 14, x, y, this.node, false);
+            const panel = makePanel('kb', 14, 14, x, y, this.node, false);
+            this.touchKeys.push(btn, panel);
             btn.setPosition(new Vec3(x, y, 0));
             btn.on(Node.EventType.TOUCH_END, cb);
         };
@@ -259,7 +264,13 @@ export class MapScreen extends ScreenBase {
     /* ================= 主循环 ================= */
 
     protected update(dt: number): void {
-        if (this.busy || this.menuOpen || (this.dlg && this.dlg.isPlaying())) return;
+        // 对话进行时隐藏触屏按键，避免黑色按键框盖在对话框上
+        const dlgPlaying = !!(this.dlg && this.dlg.isPlaying());
+        if (this.touchVisible === dlgPlaying) {
+            this.touchVisible = !dlgPlaying;
+            for (const k of this.touchKeys) k.active = this.touchVisible;
+        }
+        if (this.busy || this.menuOpen || dlgPlaying) return;
         this.stepClock += dt;
         if (this.stepClock < 0.11) return;
         this.stepClock = 0;
