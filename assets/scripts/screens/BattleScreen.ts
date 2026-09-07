@@ -98,6 +98,8 @@ export class BattleScreen extends ScreenBase {
         this.infoLabel.overflow = Label.Overflow.SHRINK;
         // 状态条
         this.statusLabel = makeLabel('', 10, FC.WHITE, this.node, 0, -106, 240);
+        // 按键提示（信息窗下方、触屏按键与状态条之间，不与其他元素重叠）
+        makeLabel('↑↓选择　J 确认　K 取消', 10, FC.GRAY, this.node, 0, -90);
         this.buildTouchPad();
     }
 
@@ -153,6 +155,7 @@ export class BattleScreen extends ScreenBase {
             makePanel('kb', 14, 14, x, y, this.node, false);
             btn.setPosition(new Vec3(x, y, 0));
             btn.on(Node.EventType.TOUCH_END, cb);
+            makeLabel(name === 'keyA' ? 'A' : 'B', 6, FC.GRAY, btn, 0, 0);
         };
         tapBtn('keyA', 102, -52, () => this.onTapA());
         tapBtn('keyB', 86, -68, () => this.onTapB());

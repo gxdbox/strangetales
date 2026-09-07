@@ -233,6 +233,7 @@ export class MapScreen extends ScreenBase {
             this.touchKeys.push(btn, panel);
             btn.setPosition(new Vec3(x, y, 0));
             btn.on(Node.EventType.TOUCH_END, cb);
+            makeLabel(name === 'keyA' ? 'A' : 'B', 6, FC.GRAY, btn, 0, 0);
         };
         tapBtn('keyA', 102, -80, () => this.confirm());
         tapBtn('keyB', 86, -97, () => this.cancel());
@@ -484,9 +485,9 @@ export class MapScreen extends ScreenBase {
         pushItem('保存进度', 'save', undefined, y);
         y -= ROW;
         pushItem('关闭', 'close', undefined, y);
-        // 底部提示行（居中显示）
+        // 底部提示行（居中显示，覆盖键盘+触屏）
         const tipY = y - GAP;
-        rows.push({ text: 'J确认 K取消 方向键移动', size: 10, color: FC.GRAY, x: 0, w: 0, y: tipY });
+        rows.push({ text: 'J确认 K取消 方向键移动 A/B触屏', size: 10, color: FC.GRAY, x: 0, w: 0, y: tipY });
         // 面板高度按内容重算，内容在面板内上下留白均衡（整体仍居中于 (0,0) 附近）
         const PAD = 12;
         const contentTop = nameY + Math.round((14 * 1.25) / 2);    // 名字行上沿

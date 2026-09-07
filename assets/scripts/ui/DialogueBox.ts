@@ -150,8 +150,8 @@ export class DialogueBox extends Component {
         this.textLabel = makeLabel('', 11, FC.WHITE, panel, 0, 12, 216, false);
         this.textLabel.node.getComponent(UITransform)!.setContentSize(216, 44);
         this.textLabel.overflow = Label.Overflow.SHRINK;
-        // 下箭头（面板内部右下角）
-        this.arrow = makePanel('arr', 8, 5, 104, -104, root, false);
+        // 右下角提示：▼J 继续（8px 灰字，代替原方块箭头，语义更明确）
+        this.arrow = makeLabel('▼J 继续', 8, FC.GRAY, root, 92, -104).node;
     }
 
     protected update(dt: number): void {

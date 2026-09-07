@@ -65,7 +65,8 @@ export class TitleScreen extends ScreenBase {
         } else {
             makeLabel('－新的旅程－', 12, FC.WHITE, menu, 0, -44, 130);
         }
-        makeLabel('请按 J/空格 确定　方向键选择', 10, FC.GRAY, menu, 0, -82, 220);
+        makeLabel('方向键/WASD 选择　J/空格 确认', 10, FC.GRAY, menu, 0, -76);
+        makeLabel('K/X 取消　菜单', 10, FC.GRAY, menu, 0, -90);
         makeLabel('© 2026 志异绘卷 · FC STYLE RPG', 8, FC.DEEP_GRAY, menu, 0, -104, 220);
     }
 
