@@ -265,10 +265,11 @@ export class MapScreen extends ScreenBase {
     /* ================= 主循环 ================= */
 
     protected update(dt: number): void {
-        // 对话进行时隐藏触屏按键，避免黑色按键框盖在对话框上
+        // 对话进行时或菜单打开时隐藏触屏按键，避免黑色按键框露在面板外
         const dlgPlaying = !!(this.dlg && this.dlg.isPlaying());
-        if (this.touchVisible === dlgPlaying) {
-            this.touchVisible = !dlgPlaying;
+        const hideKeys = dlgPlaying || this.menuOpen;
+        if (this.touchVisible === hideKeys) {
+            this.touchVisible = !hideKeys;
             for (const k of this.touchKeys) k.active = this.touchVisible;
         }
         if (this.busy || this.menuOpen || dlgPlaying) return;
@@ -438,31 +439,43 @@ export class MapScreen extends ScreenBase {
 
     private openMenu(): void {
         this.menuOpen = true;
+        // 菜单打开时立即隐藏触屏按键（update 里也会兜底，这里避免首帧露出）
+        if (this.touchVisible) {
+            this.touchVisible = false;
+            for (const k of this.touchKeys) k.active = false;
+        }
         const h = Game.save.hero;
-        // —— 布局常量：统一左对齐、固定行距、组间隔 ——
+        // —— 布局常量：两列对齐（左列/右列各自同一 x 起点）、固定行距、组间隔 ——
         const ROW = 14;   // 条目行距
-        const GAP = 16;   // 组之间间隔（20 会超出 224 设计分辨率，16 为安全上限）
-        const TX = -82;   // 正文统一左对齐 x（面板左侧留边）
+        const GAP = 16;   // 组之间间隔
+        const TX = -82;   // 左列 x（面板左侧留边）
+        const RX = 28;    // 右列 x（与左列构成两列网格，值起点对齐）
         const CX = -90;   // 光标 x（对齐线左侧 8px）
         // 先算好所有文本行坐标，再按内容决定面板尺寸，保证上下留白均衡
         const rows: { text: string; size: number; color: number[]; x: number; w: number; y: number }[] = [];
         let y = 90;
         const nameY = y;
-        rows.push({ text: h.name, size: 14, color: FC.YELLOW, x: TX, w: 180, y });
+        // 头部：名字（左）+ 等级（右）
+        rows.push({ text: h.name, size: 14, color: FC.YELLOW, x: TX, w: 100, y });
+        rows.push({ text: `Lv ${h.lv}`, size: 11, color: FC.WHITE, x: RX, w: 60, y });
         y -= ROW;
+        // 经验（左）+ 金币（右）
         rows.push({
-            text: `Lv${h.lv}  EXP ${h.exp}/${h.lv >= 8 ? '--' : String(10 * h.lv * h.lv)}  G ${h.gold}`,
-            size: 11, color: FC.WHITE, x: TX, w: 180, y,
+            text: `EXP ${h.exp}/${h.lv >= 8 ? '--' : String(10 * h.lv * h.lv)}`,
+            size: 11, color: FC.WHITE, x: TX, w: 100, y,
         });
+        rows.push({ text: `G ${h.gold}`, size: 11, color: FC.WHITE, x: RX, w: 60, y });
         y -= ROW;
-        rows.push({ text: `体力 ${Game.battleHp}/${h.maxHp}  灵力 ${Game.battleMp}/${h.maxMp}`, size: 11, color: FC.WHITE, x: TX, w: 180, y });
+        // 体力（左）+ 灵力（右）
+        rows.push({ text: `体力 ${Game.battleHp}/${h.maxHp}`, size: 11, color: FC.WHITE, x: TX, w: 100, y });
+        rows.push({ text: `灵力 ${Game.battleMp}/${h.maxMp}`, size: 11, color: FC.WHITE, x: RX, w: 60, y });
         // 道术组
         y -= GAP;
         rows.push({ text: '──道术──', size: 11, color: FC.GRAY, x: TX, w: 180, y });
         y -= ROW;
         const skills = [['火诀', true], ['清心诀', (h.items['清心诀'] || 0) > 0]] as [string, boolean][];
         for (const [name, learned] of skills) {
-            rows.push({ text: learned ? name : '？', size: 11, color: learned ? FC.WHITE : FC.GRAY, x: TX, w: 170, y });
+            rows.push({ text: learned ? name : '？？？', size: 11, color: learned ? FC.WHITE : FC.GRAY, x: TX, w: 170, y });
             y -= ROW;
         }
         // 道具组（含保存/关闭操作项）
@@ -485,9 +498,9 @@ export class MapScreen extends ScreenBase {
         pushItem('保存进度', 'save', undefined, y);
         y -= ROW;
         pushItem('关闭', 'close', undefined, y);
-        // 底部提示行（居中显示，覆盖键盘+触屏）
+        // 底部提示行（全角空格保证间距均匀，居中显示，覆盖键盘+触屏）
         const tipY = y - GAP;
-        rows.push({ text: 'J确认 K取消 方向键移动 A/B触屏', size: 10, color: FC.GRAY, x: 0, w: 0, y: tipY });
+        rows.push({ text: 'J确认　K取消　方向键移动　A/B触屏', size: 10, color: FC.GRAY, x: 0, w: 0, y: tipY });
         // 面板高度按内容重算，内容在面板内上下留白均衡（整体仍居中于 (0,0) 附近）
         const PAD = 12;
         const contentTop = nameY + Math.round((14 * 1.25) / 2);    // 名字行上沿
@@ -571,5 +584,11 @@ export class MapScreen extends ScreenBase {
         }
         this.menuCursor = null;
         this.menuItems = [];
+        // 菜单关闭且无对话时恢复触屏按键（update 里也会兜底，这里避免下一帧前留空）
+        const dlgPlaying = !!(this.dlg && this.dlg.isPlaying());
+        if (!this.touchVisible && !dlgPlaying) {
+            this.touchVisible = true;
+            for (const k of this.touchKeys) k.active = true;
+        }
     }
 }
